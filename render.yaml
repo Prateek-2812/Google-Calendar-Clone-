@@ -3,12 +3,10 @@ services:
     name: google-calendar-backend
     env: node
     plan: free
-    buildCommand: npm install && npm rebuild better-sqlite3 && npm run build -w shared && npm run build -w backend
+    buildCommand: npm install --include=dev && npm rebuild better-sqlite3 && npm run build -w shared && npm run build -w backend
     startCommand: npm start -w backend
     envVars:
       # PORT is injected automatically by Render — do not override it.
-      - key: NODE_ENV
-        value: production
       # Ephemeral SQLite on free tier. Upgrade plan + uncomment disk block below for persistence.
       - key: DATABASE_URL
         value: ./data/calendar.db
