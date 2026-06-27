@@ -1,0 +1,23 @@
+{
+  "name": "@calendar/shared",
+  "version": "1.0.0",
+  "description": "Shared TypeScript interfaces for the Google Calendar Clone",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  },
+  "files": ["dist"]
+}
