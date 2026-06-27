@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getStoredToken } from '@/context/AuthContext';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: (import.meta.env.VITE_API_URL as string) || '/api',
   headers: { 'Content-Type': 'application/json' },
 });
 

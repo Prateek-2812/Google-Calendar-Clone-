@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: google-calendar-backend
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build -w shared && npm run build -w backend
+    startCommand: npm start -w backend
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        value: ./data/calendar.db # Ephemeral by default on Free tier
+      - key: JWT_SECRET
+        generateValue: true # Generates a secure random JWT secret
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        sync: false # Set this to the Vercel frontend URL (e.g. https://your-app.vercel.app)
+
+# To use a persistent disk for SQLite (requires Render Paid Tier):
+# 1. Uncomment the `disk` block below
+# 2. Change the `DATABASE_URL` environment variable to `/data/calendar.db`
+#
+#     disk:
+#       name: calendar-db-disk
+#       mountPath: /data
+#       sizeGB: 1
