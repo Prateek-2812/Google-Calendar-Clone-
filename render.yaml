@@ -3,23 +3,27 @@ services:
     name: google-calendar-backend
     env: node
     plan: free
-    buildCommand: npm install && npm run build -w shared && npm run build -w backend
+    nodeVersion: 20.19.2
+    buildCommand: npm install && npm rebuild better-sqlite3 && npm run build -w shared && npm run build -w backend
     startCommand: npm start -w backend
     envVars:
-      - key: PORT
-        value: 3001
+      # PORT is injected automatically by Render — do not override it.
+      - key: NODE_ENV
+        value: production
+      # Ephemeral SQLite on free tier. Upgrade plan + uncomment disk block below for persistence.
       - key: DATABASE_URL
-        value: ./data/calendar.db # Ephemeral by default on Free tier
+        value: ./data/calendar.db
       - key: JWT_SECRET
-        generateValue: true # Generates a secure random JWT secret
+        generateValue: true
       - key: JWT_EXPIRES_IN
         value: 7d
+      # IMPORTANT: Set this to your Vercel frontend URL after deploying the frontend.
       - key: CORS_ORIGIN
-        sync: false # Set this to the Vercel frontend URL (e.g. https://your-app.vercel.app)
+        sync: false
 
 # To use a persistent disk for SQLite (requires Render Paid Tier):
 # 1. Uncomment the `disk` block below
-# 2. Change the `DATABASE_URL` environment variable to `/data/calendar.db`
+# 2. Change DATABASE_URL to /data/calendar.db
 #
 #     disk:
 #       name: calendar-db-disk
