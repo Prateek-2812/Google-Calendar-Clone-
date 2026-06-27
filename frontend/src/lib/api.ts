@@ -1,8 +1,13 @@
 import axios from 'axios';
 import { getStoredToken } from '@/context/AuthContext';
 
+const rawApiUrl = (import.meta.env.VITE_API_URL as string) || '';
+const baseURL = rawApiUrl
+  ? rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/$/, '')}/api`
+  : '/api';
+
 const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL as string) || '/api',
+  baseURL,
   headers: { 'Content-Type': 'application/json' },
 });
 
