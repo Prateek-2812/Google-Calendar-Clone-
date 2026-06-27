@@ -4,6 +4,7 @@ import cors from 'cors';
 import { initDatabase } from './db/migrations.js';
 import authRouter from './routes/auth.js';
 import eventsRouter from './routes/events.js';
+import calendarsRouter from './routes/calendars.js';
 
 // ----------------------------------------------------------------
 // Bootstrap DB
@@ -45,6 +46,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/events', eventsRouter);
+app.use('/api/calendars', calendarsRouter);
 
 // ----------------------------------------------------------------
 // 404 fallback

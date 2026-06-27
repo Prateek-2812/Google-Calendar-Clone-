@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import db from '../db/database.js';
 import { authenticate, type AuthRequest } from '../middleware/auth.js';
+import { seedDefaultCalendars } from '../db/migrations.js';
 import type { User, UserRow, AuthUser } from '@calendar/shared';
 
 const router = Router();
@@ -123,6 +124,9 @@ router.post('/register', (req: Request, res: Response): void => {
     INSERT INTO users (id, email, password_hash, name, timezone, created_at)
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(userId, email, passwordHash, name, timezone, now);
+
+  // Seed default calendars (Personal, Work, Birthdays) for the new user
+  seedDefaultCalendars(userId);
 
   // Re-fetch to get the exact row the DB stores (including default values)
   const userRow = db

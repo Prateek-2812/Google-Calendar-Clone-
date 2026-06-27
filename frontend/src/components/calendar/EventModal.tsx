@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { format, addHours } from 'date-fns';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, AlignLeft, Trash2, Repeat, FileText } from 'lucide-react';
+import { X, Clock, AlignLeft, Trash2, Repeat, FileText, CalendarDays } from 'lucide-react';
 import { useEventFormStore } from '@/store/eventFormStore';
 import { useEventDraft } from '@/hooks/useEventDraft';
+import { useCalendars } from '@/hooks/useCalendars';
 import api from '@/lib/api';
 import type { CreateEventRequest, UpdateEventRequest, CreateEventExceptionRequest, RecurrenceRule } from '@calendar/shared';
 import ConflictDialog from './ConflictDialog';
@@ -17,6 +18,7 @@ const COLORS = [
 export default function EventModal() {
   const { modal, closeModal } = useEventFormStore();
   const queryClient = useQueryClient();
+  const { data: calendars = [] } = useCalendars();
 
   // ── Form state ──────────────────────────────────────────────────
   const [title, setTitle]             = useState('');
@@ -27,6 +29,7 @@ export default function EventModal() {
   const [endTimeStr, setEndTimeStr]   = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor]             = useState(COLORS[0]);
+  const [calendarId, setCalendarId]   = useState<string | undefined>(undefined);
   const [recurrenceFreq, setRecurrenceFreq] =
     useState<'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY'>('NONE');
   const [editModeRecurring, setEditModeRecurring] = useState<'this' | 'all'>('this');
@@ -66,6 +69,9 @@ export default function EventModal() {
         setEndTimeStr(format(end, 'HH:mm'));
       }
       setEditModeRecurring('this');
+      // Default to first 'my' calendar
+      const firstMy = calendars.find((c) => c.section === 'my');
+      setCalendarId(firstMy?.id);
 
     } else if (modal.mode === 'edit' && modal.eventToEdit) {
       const e = modal.eventToEdit;
@@ -80,6 +86,7 @@ export default function EventModal() {
       setStartTimeStr(format(localStart, 'HH:mm'));
       setEndDateStr(format(localEnd, 'yyyy-MM-dd'));
       setEndTimeStr(format(localEnd, 'HH:mm'));
+      setCalendarId((e as any).calendar_id ?? undefined);
       setEditModeRecurring('this');
     }
   }, [modal]);
@@ -164,6 +171,7 @@ export default function EventModal() {
         title: title.trim() || '(No title)', description,
         start_utc: startObj.toISOString(), end_utc: endObj.toISOString(),
         color, is_all_day: isAllDay, recurrence_rule: recRule,
+        calendar_id: calendarId,
       };
       saveMutation.mutate({ req, endpoint: '/events', method: 'POST' });
 
@@ -183,6 +191,7 @@ export default function EventModal() {
           title: title.trim() || '(No title)', description,
           start_utc: startObj.toISOString(), end_utc: endObj.toISOString(),
           color, is_all_day: isAllDay, recurrence_rule: recRule,
+          calendar_id: calendarId,
         };
         saveMutation.mutate({ req, endpoint: `/events/${e.event_id}`, method: 'PUT' });
       }
@@ -309,6 +318,25 @@ export default function EventModal() {
                   onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
+
+              {/* Calendar picker */}
+              {calendars.length > 0 && (
+                <div className="flex items-center gap-4">
+                  <CalendarDays size={20} className="text-gray-500 shrink-0" />
+                  <select
+                    value={calendarId ?? ''}
+                    onChange={(e) => setCalendarId(e.target.value || undefined)}
+                    className="border border-gray-300 rounded px-2 py-1 text-sm
+                               focus:border-blue-500 outline-none flex-1"
+                  >
+                    {calendars.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Color picker */}
               <div className="flex items-center gap-4">

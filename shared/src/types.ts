@@ -5,6 +5,41 @@
 // ============================================================
 
 // ----------------------------------------------------------------
+// Calendar
+// ----------------------------------------------------------------
+
+/** Which section of the sidebar this calendar appears in. */
+export type CalendarSection = 'my' | 'other';
+
+/**
+ * A calendar that groups events.
+ * DB columns: id, user_id, name, color, is_visible, section, created_at
+ */
+export interface Calendar {
+  id: string;
+  user_id: string;
+  name: string;
+  /** Hex color e.g. "#1a73e8" */
+  color: string;
+  is_visible: boolean;
+  section: CalendarSection;
+  created_at: string;
+}
+
+export type CreateCalendarRequest = {
+  name: string;
+  color: string;
+  section?: CalendarSection;
+};
+
+export type UpdateCalendarRequest = Partial<{
+  name: string;
+  color: string;
+  is_visible: boolean;
+  section: CalendarSection;
+}>;
+
+// ----------------------------------------------------------------
 // Recurrence
 // ----------------------------------------------------------------
 
@@ -160,6 +195,9 @@ export interface Event {
    */
   recurrence_rule?: RecurrenceRule;
 
+  /** FK → calendars.id. Optional — null for legacy events. */
+  calendar_id?: string;
+
   /** UTC ISO 8601 — when the row was first inserted. */
   created_at: string;
 
@@ -208,6 +246,9 @@ export interface EventInstance {
   color?: string;
   is_all_day: boolean;
   recurrence_rule?: RecurrenceRule;
+
+  /** FK → calendars.id. Optional — null for legacy events. */
+  calendar_id?: string;
 
   /** True when this occurrence was modified by an event_exceptions row. */
   has_exception: boolean;

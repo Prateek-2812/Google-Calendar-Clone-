@@ -200,3 +200,12 @@
     height: 100dvh;
   }
 }
+
+/* ----------------------------------------------------------------
+   Density modes (toggled via settingsStore on <body>)
+   ---------------------------------------------------------------- */
+body.density-compact .event-card-inner {
+  padding-top: 1px;
+  padding-bottom: 1px;
+}
+

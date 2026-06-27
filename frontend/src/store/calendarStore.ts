@@ -41,6 +41,12 @@ interface CalendarState {
 
   /** Switch between day / week / month view. */
   setView: (mode: ViewMode) => void;
+
+  /** ID of the event instance to pulse-highlight (set by search result click). */
+  pulsedEventId: string | null;
+
+  /** Set or clear the pulsed event id. Clears automatically after 2 s. */
+  setPulsedEventId: (id: string | null) => void;
 }
 
 // ----------------------------------------------------------------
@@ -70,6 +76,7 @@ function prevDate(date: Date, view: ViewMode): Date {
 export const useCalendarStore = create<CalendarState>((set, get) => ({
   currentDate: new Date(),
   viewMode: 'month',
+  pulsedEventId: null,
 
   goNext: () =>
     set((s) => ({ currentDate: nextDate(s.currentDate, s.viewMode) })),
@@ -83,11 +90,17 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
 
   setView: (mode) => {
     const { currentDate } = get();
-    // Snap anchor to start of week/month when switching to those views
     let snapped = currentDate;
     if (mode === 'week')  snapped = startOfWeek(currentDate, { weekStartsOn: 0 });
     if (mode === 'month') snapped = startOfMonth(currentDate);
     set({ viewMode: mode, currentDate: snapped });
+  },
+
+  setPulsedEventId: (id) => {
+    set({ pulsedEventId: id });
+    if (id) {
+      setTimeout(() => set({ pulsedEventId: null }), 2000);
+    }
   },
 }));
 

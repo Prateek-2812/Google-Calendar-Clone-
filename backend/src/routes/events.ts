@@ -39,6 +39,7 @@ const eventBodyBaseSchema = z.object({
     .optional(),
   is_all_day: z.boolean().default(false),
   recurrence_rule: recurrenceRuleSchema,
+  calendar_id: z.string().uuid().optional(),
 });
 
 const eventBodySchema = eventBodyBaseSchema.refine((d) => new Date(d.start_utc) < new Date(d.end_utc), {
@@ -58,6 +59,7 @@ const querySchema = z.object({
 type EventRow = {
   id: string;
   user_id: string;
+  calendar_id: string | null;
   title: string;
   description: string | null;
   start_utc: string;
@@ -86,6 +88,7 @@ function rowToEvent(row: EventRow): Event {
   return {
     id: row.id,
     user_id: row.user_id,
+    calendar_id: row.calendar_id ?? undefined,
     title: row.title,
     description: row.description ?? undefined,
     start_utc: row.start_utc,
@@ -147,6 +150,36 @@ function findOverlap(
 
   return db.prepare(sql).get(...params) as EventRow | undefined;
 }
+
+// ----------------------------------------------------------------
+// GET /api/events/search?q=query
+// ----------------------------------------------------------------
+//
+// Full-text search on title + description (LIKE). Returns up to 20
+// matching events as EventInstance objects (non-recurring only for
+// simplicity — recurring masters also searched by title/desc).
+
+router.get('/search', (req: AuthRequest, res: Response): void => {
+  const q = (req.query.q as string | undefined)?.trim();
+  if (!q || q.length < 1) {
+    res.json({ success: true, data: [] });
+    return;
+  }
+
+  const like = `%${q}%`;
+  const rows = db
+    .prepare(`
+      SELECT * FROM events
+      WHERE user_id = ?
+        AND (title LIKE ? OR description LIKE ?)
+      ORDER BY start_utc DESC
+      LIMIT 20
+    `)
+    .all(req.user!.id, like, like) as EventRow[];
+
+  const instances: EventInstance[] = rows.map((row) => wrapSingleEvent(rowToEvent(row)));
+  res.json({ success: true, data: instances });
+});
 
 // ----------------------------------------------------------------
 // GET /api/events?start=ISO&end=ISO
@@ -300,14 +333,24 @@ router.post('/', (req: AuthRequest, res: Response): void => {
   const id = uuidv4();
   const now = new Date().toISOString();
 
+  // Resolve calendar_id: use provided, or fall back to user's Personal calendar
+  let calendarId: string | null = data.calendar_id ?? null;
+  if (!calendarId) {
+    const personal = db
+      .prepare(`SELECT id FROM calendars WHERE user_id = ? AND name = 'Personal' LIMIT 1`)
+      .get(req.user!.id) as { id: string } | undefined;
+    calendarId = personal?.id ?? null;
+  }
+
   db.prepare(`
     INSERT INTO events
-      (id, user_id, title, description, start_utc, end_utc,
+      (id, user_id, calendar_id, title, description, start_utc, end_utc,
        color, is_all_day, recurrence_rule, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     req.user!.id,
+    calendarId,
     data.title,
     data.description ?? null,
     data.start_utc,
@@ -388,6 +431,7 @@ router.put('/:id', (req: AuthRequest, res: Response): void => {
       color            = ?,
       is_all_day       = ?,
       recurrence_rule  = ?,
+      calendar_id      = ?,
       updated_at       = ?
     WHERE id = ?
   `).run(
@@ -398,6 +442,7 @@ router.put('/:id', (req: AuthRequest, res: Response): void => {
     data.color ?? null,
     data.is_all_day ? 1 : 0,
     data.recurrence_rule ? JSON.stringify(data.recurrence_rule) : null,
+    data.calendar_id ?? (existing as EventRow).calendar_id ?? null,
     now,
     req.params.id
   );

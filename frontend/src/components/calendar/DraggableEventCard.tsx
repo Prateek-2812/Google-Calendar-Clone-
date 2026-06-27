@@ -1,6 +1,8 @@
 import { useDraggable } from '@dnd-kit/core';
 import { format } from 'date-fns';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useCalendarStore } from '@/store/calendarStore';
 import type { LocalEvent } from '@/lib/eventLayout';
 
 interface Props {
@@ -48,16 +50,17 @@ export default function DraggableEventCard({
   });
 
   const isActive = isMoving || isResizing;
+  const pulsedEventId = useCalendarStore((s) => s.pulsedEventId);
+  const isPulsed = pulsedEventId === event.instance_id;
 
   return (
-    <div
+    <motion.div
+      animate={isPulsed ? { scale: [1, 1.06, 1, 1.04, 1] } : {}}
+      transition={{ duration: 0.5, ease: 'easeInOut' }}
       className={cn(
         'absolute p-[1px] z-10 group',
-        // Smooth transitions for opacity and position
         'transition-[opacity,transform] duration-150 ease-out',
-        // Ghost: dim original while dragging
         isActive && !isDraggingOverlay && 'opacity-25 pointer-events-none',
-        // Overlay: elevated & slightly scaled
         isDraggingOverlay && 'opacity-95 shadow-2xl'
       )}
       style={style}
@@ -111,16 +114,14 @@ export default function DraggableEventCard({
             'absolute bottom-0 left-0 right-0 h-3 z-20',
             'cursor-ns-resize',
             'flex items-end justify-center pb-[3px]',
-            // Invisible by default, smoothly revealed on group hover
             'opacity-0 group-hover:opacity-100 transition-opacity duration-150'
           )}
           onClick={(e) => e.stopPropagation()}
           title="Drag to resize"
         >
-          {/* Pill visual indicator */}
           <div className="w-8 h-1 rounded-full bg-white/70 pointer-events-none" />
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
