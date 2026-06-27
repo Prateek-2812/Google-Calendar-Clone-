@@ -3,7 +3,6 @@ services:
     name: google-calendar-backend
     env: node
     plan: free
-    nodeVersion: 20.19.2
     buildCommand: npm install && npm rebuild better-sqlite3 && npm run build -w shared && npm run build -w backend
     startCommand: npm start -w backend
     envVars:
